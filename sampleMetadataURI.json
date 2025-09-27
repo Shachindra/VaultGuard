@@ -1,0 +1,26 @@
+{
+    "name": "Crazy Activity Video #1",
+    "description": "I recorded this video capturing a crazy activity that'll create issues if it comes live. Dangerous people are behind me to get a hold of me and delete the video. If I don't see the light of the day, you know what to do...",
+    "image": "https://example.com/vaultguard-image-1.jpg",
+    "attributes": [
+        {
+            "trait_type": "Ping Interval",
+            "value": "12345678"
+        },
+        {
+            "trait_type": "Nominees",
+            "value": [
+                "0x1234567890abcdef1234567890abcdef12345678",
+                "0xabcdef1234567890abcdef1234567890abcdef12"
+            ]
+        },
+        {
+            "trait_type": "Encrypted Hash",
+            "value": "ipfsORwalrusHash_5f16f4c7d49d5fab2f8e0b4e0d8a2e9d3f7b8c1d2e3f4a5b6c7d8e9f0a1b2c3d"
+        },
+        {
+            "trait_type": "Owner",
+            "value": "0xabcdef1234567890abcdef1234567890abcdef12"
+        }
+    ]
+}

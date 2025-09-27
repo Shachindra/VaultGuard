@@ -12,6 +12,7 @@ contract VaultGuard is ERC721, Ownable {
         bytes32 encryptedHash;
         bytes32 decryptedHash;
         bool executed;
+        string metadataURI;
     }
 
     mapping(uint256 => Will) private _wills;
@@ -26,7 +27,8 @@ contract VaultGuard is ERC721, Ownable {
     function createWill(
         uint256 initialDeadline,
         address[] memory nominees,
-        bytes32 encryptedHash
+        bytes32 encryptedHash,
+        string memory metadataURI
     ) external returns (uint256 tokenId) {
         tokenId = _nextTokenId++;
         _safeMint(msg.sender, tokenId);
@@ -36,7 +38,8 @@ contract VaultGuard is ERC721, Ownable {
             nominees: nominees,
             encryptedHash: encryptedHash,
             decryptedHash: bytes32(0),
-            executed: false
+            executed: false,
+            metadataURI: metadataURI
         });
     }
 
@@ -97,7 +100,8 @@ contract VaultGuard is ERC721, Ownable {
         address[] memory nominees,
         bytes32 encryptedHash,
         bytes32 decryptedHash,
-        bool executed
+        bool executed,
+        string memory metadataURI
     ) {
         Will storage will = _wills[tokenId];
         return (
@@ -106,7 +110,13 @@ contract VaultGuard is ERC721, Ownable {
             will.nominees,
             will.encryptedHash,
             will.decryptedHash,
-            will.executed
+            will.executed,
+            will.metadataURI
         );
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "NFT does not exist");
+        return _wills[tokenId].metadataURI;
     }
 }
