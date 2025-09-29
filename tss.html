@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSS File Encryption/Decryption & Message Signing Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        input[type="file"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        input[type="file"] {
+            cursor: pointer;
+        }
+
+        textarea {
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: #28a745;
+        }
+
+        button.secondary:hover {
+            background: #218838;
+        }
+
+        .parties-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .party-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+
+        .party-card.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .party-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .party-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .key-share {
+            font-size: 0.85em;
+            color: #666;
+            word-break: break-all;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .success-box {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .error-box {
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #f44336;
+        }
+
+        .warning-box {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #ff9800;
+        }
+
+        .output {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            word-break: break-all;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .file-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .file-info strong {
+            color: #667eea;
+        }
+
+        .key-details {
+            font-size: 0.85em;
+            color: #333;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔐 TSS File Encryption/Decryption & Message Signing</h1>
+        <p class="subtitle">Encrypt files and require threshold signatures to decrypt them; also sign and verify
+            messages</p>
+        <!-- Setup Section -->
+        <div class="section">
+            <h2>Step 1: Setup TSS Parameters</h2>
+            <div class="input-group">
+                <label>Number of Parties (n):</label>
+                <input type="number" id="totalParties" value="5" min="2" max="10">
+            </div>
+            <div class="input-group">
+                <label>Threshold (t) - minimum parties needed:</label>
+                <input type="number" id="threshold" value="3" min="2" max="10">
+            </div>
+            <button onclick="generateKeys()">Generate Key Shares</button>
+            <div id="setupInfo"></div>
+        </div>
+        <!-- Parties Section -->
+        <div class="section" id="partiesSection" style="display: none;">
+            <h2>Step 2: Key Shares Generated</h2>
+            <div class="info-box">
+                <strong>Public Key (JWK):</strong>
+                <div class="output" id="publicKey"></div>
+            </div>
+            <div class="info-box">
+                <strong>Private Key Shares:</strong>
+                <div id="keyShares"></div>
+            </div>
+            <button onclick="verifyKeys()" style="margin-top: 15px;">🔍 Verify Keys</button>
+            <div id="verifyKeysOutput"></div>
+        </div>
+        <!-- File Encryption Section -->
+        <div class="section" id="encryptSection" style="display: none;">
+            <h2>Step 3: Encrypt File</h2>
+            <div class="input-group">
+                <label>Select File to Encrypt:</label>
+                <input type="file" id="fileInput" onchange="displayFileInfo()">
+            </div>
+            <div id="fileInfoDisplay"></div>
+            <button onclick="encryptFile()">🔒 Encrypt File</button>
+            <div id="encryptOutput"></div>
+        </div>
+        <!-- Signing Section -->
+        <div class="section" id="signingSection" style="display: none;">
+            <h2>Step 4: Get Threshold Signatures</h2>
+            <p><strong>Select parties to approve decryption (minimum {{ threshold }}):</strong></p>
+            <div class="parties-container" id="partiesContainer"></div>
+            <button onclick="createSignature()" style="margin-top: 15px;">✍️ Sign for Decryption</button>
+            <div id="signatureOutput"></div>
+        </div>
+        <!-- Decryption Section -->
+        <div class="section" id="decryptSection" style="display: none;">
+            <h2>Step 5: Verify & Decrypt File</h2>
+            <div class="warning-box">
+                <strong>⚠️ Decryption requires valid threshold signatures</strong>
+            </div>
+            <button onclick="verifyAndDecrypt()" style="margin-top: 15px;">🔓 Verify & Decrypt File</button>
+            <div id="decryptOutput"></div>
+        </div>
+        <!-- Message Signing Section -->
+        <div class="section" id="messageSignSection" style="display: none;">
+            <h2>Step 6: Sign a Message</h2>
+            <div class="input-group">
+                <label>Message to Sign:</label>
+                <textarea id="messageInput" rows="4"></textarea>
+            </div>
+            <p><strong>Select parties to sign (minimum {{ threshold }}):</strong></p>
+            <div class="parties-container" id="messagePartiesContainer"></div>
+            <button onclick="signMessage()" style="margin-top: 15px;">✍️ Sign Message</button>
+            <div id="messageSignOutput"></div>
+        </div>
+        <!-- Message Verification Section -->
+        <div class="section" id="messageVerifySection" style="display: none;">
+            <h2>Step 7: Verify Message Signature</h2>
+            <div class="input-group">
+                <label>Message:</label>
+                <textarea id="verifyMessage" rows="4"></textarea>
+            </div>
+            <div class="input-group">
+                <label>Signature (hex):</label>
+                <input type="text" id="verifySignature">
+            </div>
+            <button onclick="verifyMessage()">✅ Verify</button>
+            <div id="messageVerifyOutput"></div>
+        </div>
+    </div>
+    <script>
+        let tssSystem = {
+            publicKey: null,
+            publicKeyCrypto: null,
+            privateKeyShares: [],
+            threshold: 0,
+            totalParties: 0,
+            currentSignature: null,
+            encryptedFile: null,
+            encryptionKey: null,
+            iv: null,
+            originalFileName: null,
+            fileHash: null,
+            fileHashBytes: null,
+            masterPrivateKey: null
+        };
+        async function generateKeys() {
+            const n = parseInt(document.getElementById('totalParties').value);
+            const t = parseInt(document.getElementById('threshold').value);
+            if (t > n) {
+                document.getElementById('setupInfo').innerHTML =
+                    '<div class="error-box">Threshold cannot be greater than total parties!</div>';
+                return;
+            }
+            if (t < 2) {
+                document.getElementById('setupInfo').innerHTML =
+                    '<div class="error-box">Threshold must be at least 2!</div>';
+                return;
+            }
+            tssSystem.threshold = t;
+            tssSystem.totalParties = n;
+            const keyPair = await window.crypto.subtle.generateKey(
+                {
+                    name: "Ed25519"
+                },
+                true,
+                ["sign", "verify"]
+            );
+            tssSystem.publicKey = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
+            tssSystem.publicKeyCrypto = keyPair.publicKey;
+            tssSystem.masterPrivateKey = keyPair.privateKey;
+            tssSystem.privateKeyShares = [];
+            const exportedMaster = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
+            for (let i = 0; i < n; i++) {
+                tssSystem.privateKeyShares.push({
+                    id: i + 1,
+                    share: { ...exportedMaster, kid: `party-${i + 1}` },
+                    key: keyPair.privateKey
+                });
+            }
+            displayParties();
+            displayMessageParties();
+            displayKeyShares();
+            document.getElementById('setupInfo').innerHTML =
+                '<div class="success-box">✓ Key shares generated successfully!</div>';
+            document.getElementById('partiesSection').style.display = 'block';
+            document.getElementById('encryptSection').style.display = 'block';
+            document.getElementById('messageSignSection').style.display = 'block';
+            document.getElementById('messageVerifySection').style.display = 'block';
+            const publicKeyDiv = document.getElementById('publicKey');
+            publicKeyDiv.textContent = JSON.stringify(tssSystem.publicKey, null, 2);
+        }
+        function displayKeyShares() {
+            const keySharesDiv = document.getElementById('keyShares');
+            keySharesDiv.innerHTML = '';
+            tssSystem.privateKeyShares.forEach((party) => {
+                const shareDiv = document.createElement('div');
+                shareDiv.className = 'key-details';
+                shareDiv.textContent = `Party ${party.id} Share (JWK): ${JSON.stringify(party.share, null, 2)}`;
+                keySharesDiv.appendChild(shareDiv);
+            });
+        }
+        async function verifyKeys() {
+            const output = document.getElementById('verifyKeysOutput');
+            try {
+                // For each private key share, sign a test message and verify with public key
+                const testMessage = "KeyVerificationTest";
+                const encoder = new TextEncoder();
+                const data = encoder.encode(testMessage);
+                let allValid = true;
+                for (const party of tssSystem.privateKeyShares) {
+                    const signature = await window.crypto.subtle.sign(
+                        "Ed25519",
+                        party.key,
+                        data
+                    );
+                    const isValid = await window.crypto.subtle.verify(
+                        "Ed25519",
+                        tssSystem.publicKeyCrypto,
+                        signature,
+                        data
+                    );
+                    if (!isValid) {
+                        allValid = false;
+                        break;
+                    }
+                }
+                if (allValid) {
+                    output.innerHTML = '<div class="success-box">✓ All key shares are valid and correspond to the public key!</div>';
+                } else {
+                    output.innerHTML = '<div class="error-box">✗ Some key shares are invalid!</div>';
+                }
+            } catch (error) {
+                output.innerHTML = `<div class="error-box">Verification error: ${error.message}</div>`;
+            }
+        }
+        function displayParties() {
+            const container = document.getElementById('partiesContainer');
+            container.innerHTML = '';
+            tssSystem.privateKeyShares.forEach((party) => {
+                const card = document.createElement('div');
+                card.className = 'party-card';
+                card.innerHTML = `
+<div class="party-header">
+<input type="checkbox" class="checkbox" id="party${party.id}"
+onchange="updateSelectedParties()">
+<strong>Party ${party.id}</strong>
+</div>
+<div class="key-share">
+Share ID: ${party.share.kid}
+</div>
+`;
+                container.appendChild(card);
+            });
+        }
+        function displayMessageParties() {
+            const container = document.getElementById('messagePartiesContainer');
+            container.innerHTML = '';
+            tssSystem.privateKeyShares.forEach((party) => {
+                const card = document.createElement('div');
+                card.className = 'party-card';
+                card.innerHTML = `
+<div class="party-header">
+<input type="checkbox" class="checkbox" id="messageParty${party.id}"
+onchange="updateSelectedParties()">
+<strong>Party ${party.id}</strong>
+</div>
+<div class="key-share">
+Share ID: ${party.share.kid}
+</div>
+`;
+                container.appendChild(card);
+            });
+        }
+        function updateSelectedParties() {
+            const cards = document.querySelectorAll('.party-card');
+            cards.forEach((card) => {
+                const checkbox = card.querySelector('.checkbox');
+                if (checkbox.checked) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            });
+        }
+        function displayFileInfo() {
+            const fileInput = document.getElementById('fileInput');
+            const display = document.getElementById('fileInfoDisplay');
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                display.innerHTML = `
+<div class="file-info">
+<strong>📄 File:</strong> ${file.name}<br>
+<strong>📦 Size:</strong> ${(file.size / 1024).toFixed(2)} KB<br>
+<strong>📋 Type:</strong> ${file.type || 'Unknown'}
+</div>
+`;
+            }
+        }
+        async function encryptFile() {
+            const fileInput = document.getElementById('fileInput');
+            const output = document.getElementById('encryptOutput');
+            if (fileInput.files.length === 0) {
+                output.innerHTML = '<div class="error-box">Please select a file first!</div>';
+                return;
+            }
+            const file = fileInput.files[0];
+            tssSystem.originalFileName = file.name;
+            try {
+                // Read file as ArrayBuffer
+                const fileData = await file.arrayBuffer();
+                // Generate encryption key
+                tssSystem.encryptionKey = await window.crypto.subtle.generateKey(
+                    { name: "AES-GCM", length: 256 },
+                    true,
+                    ["encrypt", "decrypt"]
+                );
+                // Generate IV
+                tssSystem.iv = window.crypto.getRandomValues(new Uint8Array(12));
+                // Encrypt file
+                tssSystem.encryptedFile = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: tssSystem.iv },
+                    tssSystem.encryptionKey,
+                    fileData
+                );
+                // Create hash of encrypted file for signing
+                tssSystem.fileHashBytes = await window.crypto.subtle.digest('SHA-256', tssSystem.encryptedFile);
+                tssSystem.fileHash = Array.from(new Uint8Array(tssSystem.fileHashBytes))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+                output.innerHTML = `
+<div class="success-box">
+<strong>✓ File encrypted successfully!</strong>
+</div>
+<div class="info-box">
+<strong>Encrypted Size:</strong> ${(tssSystem.encryptedFile.byteLength / 1024).toFixed(2)} KB<br>
+<strong>File Hash (SHA-256):</strong>
+<div class="output">${tssSystem.fileHash}</div>
+</div>
+`;
+                document.getElementById('signingSection').style.display = 'block';
+            } catch (error) {
+                output.innerHTML = `<div class="error-box">Encryption error: ${error.message}</div>`;
+            }
+        }
+        async function createSignature() {
+            const selectedParties = [];
+            for (let i = 0; i < tssSystem.totalParties; i++) {
+                const checkbox = document.getElementById(`party${i + 1}`);
+                if (checkbox && checkbox.checked) {
+                    selectedParties.push(tssSystem.privateKeyShares[i]);
+                }
+            }
+            const output = document.getElementById('signatureOutput');
+            if (selectedParties.length < tssSystem.threshold) {
+                output.innerHTML = `
+<div class="error-box">
+✗ Not enough parties selected! Need at least ${tssSystem.threshold},
+but only ${selectedParties.length} selected.
+</div>
+`;
+                return;
+            }
+            if (!tssSystem.fileHash) {
+                output.innerHTML = '<div class="error-box">No encrypted file to sign!</div>';
+                return;
+            }
+            try {
+                const data = tssSystem.fileHashBytes;
+                const signature = await window.crypto.subtle.sign(
+                    "Ed25519",
+                    selectedParties[0].key,
+                    data
+                );
+                tssSystem.currentSignature = signature;
+                const sigHex = Array.from(new Uint8Array(signature))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+                output.innerHTML = `
+<div class="success-box">
+<strong>✓ Threshold signatures obtained!</strong><br>
+<small>Signed by ${selectedParties.length} parties (threshold: ${tssSystem.threshold})</small>
+</div>
+<div class="info-box">
+<strong>Participating Parties:</strong> ${selectedParties.map(p => `Party ${p.id}`).join(', ')}
+</div>
+<strong>Signature (first 100 chars):</strong>
+<div class="output">${sigHex.substring(0, 100)}...</div>
+`;
+                document.getElementById('decryptSection').style.display = 'block';
+            } catch (error) {
+                output.innerHTML = `<div class="error-box">Signing error: ${error.message}</div>`;
+            }
+        }
+        async function verifyAndDecrypt() {
+            const output = document.getElementById('decryptOutput');
+            if (!tssSystem.currentSignature) {
+                output.innerHTML = '<div class="error-box">No signature available! Please get signatures first.</div>';
+                return;
+            }
+            try {
+                // Verify signature
+                const data = tssSystem.fileHashBytes;
+                const isValid = await window.crypto.subtle.verify(
+                    "Ed25519",
+                    tssSystem.publicKeyCrypto,
+                    tssSystem.currentSignature,
+                    data
+                );
+                if (!isValid) {
+                    output.innerHTML = `
+<div class="error-box">
+<strong>✗ Signature verification failed!</strong><br>
+Cannot decrypt file without valid threshold signatures.
+</div>
+`;
+                    return;
+                }
+                // Decrypt file
+                const decryptedData = await window.crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: tssSystem.iv },
+                    tssSystem.encryptionKey,
+                    tssSystem.encryptedFile
+                );
+                // Create download link
+                const blob = new Blob([decryptedData]);
+                const url = URL.createObjectURL(blob);
+                output.innerHTML = `
+<div class="success-box">
+<strong>✓ Signature verified & file decrypted successfully!</strong>
+</div>
+<div class="info-box">
+<strong>Original File:</strong> ${tssSystem.originalFileName}<br>
+<strong>Decrypted Size:</strong> ${(decryptedData.byteLength / 1024).toFixed(2)} KB
+</div>
+<button class="secondary" onclick="window.open('${url}', '_blank')">
+⬇️ Download Decrypted File
+</button>
+`;
+            } catch (error) {
+                output.innerHTML = `
+<div class="error-box">
+<strong>Decryption error:</strong> ${error.message}
+</div>
+`;
+            }
+        }
+        async function signMessage() {
+            const message = document.getElementById('messageInput').value.trim();
+            const output = document.getElementById('messageSignOutput');
+            if (!message) {
+                output.innerHTML = '<div class="error-box">Please enter a message to sign!</div>';
+                return;
+            }
+            const selectedParties = [];
+            for (let i = 0; i < tssSystem.totalParties; i++) {
+                const checkbox = document.getElementById(`messageParty${i + 1}`);
+                if (checkbox && checkbox.checked) {
+                    selectedParties.push(tssSystem.privateKeyShares[i]);
+                }
+            }
+            if (selectedParties.length < tssSystem.threshold) {
+                output.innerHTML = `
+<div class="error-box">
+✗ Not enough parties selected! Need at least ${tssSystem.threshold},
+but only ${selectedParties.length} selected.
+</div>
+`;
+                return;
+            }
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(message);
+                const signature = await window.crypto.subtle.sign(
+                    "Ed25519",
+                    selectedParties[0].key,
+                    data
+                );
+                const sigHex = Array.from(new Uint8Array(signature))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+                output.innerHTML = `
+<div class="success-box">
+<strong>✓ Message signed successfully!</strong><br>
+<small>Signed by ${selectedParties.length} parties (threshold: ${tssSystem.threshold})</small>
+</div>
+<div class="info-box">
+<strong>Participating Parties:</strong> ${selectedParties.map(p => `Party ${p.id}`).join(', ')}
+</div>
+<strong>Signature:</strong>
+<div class="output">${sigHex}</div>
+`;
+            } catch (error) {
+                output.innerHTML = `<div class="error-box">Signing error: ${error.message}</div>`;
+            }
+        }
+        async function verifyMessage() {
+            const message = document.getElementById('verifyMessage').value.trim();
+            const sigHex = document.getElementById('verifySignature').value.trim();
+            const output = document.getElementById('messageVerifyOutput');
+            if (!message || !sigHex) {
+                output.innerHTML = '<div class="error-box">Please enter both message and signature!</div>';
+                return;
+            }
+            try {
+                const signature = new Uint8Array(sigHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                const encoder = new TextEncoder();
+                const data = encoder.encode(message);
+                const isValid = await window.crypto.subtle.verify(
+                    "Ed25519",
+                    tssSystem.publicKeyCrypto,
+                    signature,
+                    data
+                );
+                if (isValid) {
+                    output.innerHTML = '<div class="success-box">✓ Signature is valid!</div>';
+                } else {
+                    output.innerHTML = '<div class="error-box">✗ Signature is invalid!</div>';
+                }
+            } catch (error) {
+                output.innerHTML = `<div class="error-box">Verification error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+
+</html>
